@@ -1,10 +1,11 @@
 [package]
-name = "shodan"
+name = "shodan_api"
 version = "0.1.0"
-authors = ["Femi Agbabiaka <femi@femiagbabiaka.xyz>"]
+authors = ["Daniel Hoberecht <danhsecure@gmail.com"]
 license = "GPL-3.0"
 description = "A Rusty wrapper for the Shodan.io API."
+edition = "2018"
+
 
 [dependencies]
-hyper = "0.10.0"
-hyper-native-tls = "0.2.1"
+reqwest = {version = "0.11.0", features = ["blocking"]}

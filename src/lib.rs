@@ -9,17 +9,10 @@
 /// }
 /// ```
 /// For more information on the Shodan API, visit [this link](https://developer.shodan.io/api).
-extern crate hyper;
-extern crate hyper_native_tls;
-
+extern crate reqwest;
 
 pub mod shodan {
-
-    use hyper::client::{Client, Response};
-    use hyper_native_tls::NativeTlsClient;
-    use hyper::net::HttpsConnector;
-    use std::io::Read;
-    use hyper::Ok as hyper_ok;
+	use reqwest::blocking::Client;
 
     /// BaseUrl is the basis for all of our api requests.
     const BASE_URL: &'static str = "https://api.shodan.io";
@@ -29,42 +22,24 @@ pub mod shodan {
     }
 
     impl ShodanClient {
-		fn create_http_client(&self) -> Client {
-			let ssl = NativeTlsClient::new().unwrap();
-			let connector = HttpsConnector::new(ssl);
-			let client = Client::with_connector(connector);
-
-			client
+		fn build_client(&self) -> Client {
+			Client::new()
 		}
-
-		fn request(&self, api_method: &str, url: String) -> Response {
-			let client = self.create_http_client();
-
-			let response = match api_method {
-			"GET" => {
-				client.get(&*url)
-				.send()
-				.unwrap()
+		fn post(&self, url: String, params: Vec<(String, String)>) -> Result<String, String> {
+			let client = self.build_client();
+			let response = client.post(&url).form(&params).send().unwrap();
+			match &response.status().is_success() {
+				true => {Ok(response.text().unwrap())},
+				false => {Err(response.text().unwrap())}
 			}
-			_ => panic!("Invalid HTTP Verb."),
-			};
-
-			response
 		}
-
-		fn form_response(&self, mut response: Response) -> Result<String, String> {
-
-			let mut body = String::new();
-
-			if response.status == hyper_ok {
-			response.read_to_string(&mut body).unwrap();
-
-			return Ok(body);
+		fn get(&self, url: String) -> Result<String, String> {
+			let client = self.build_client();
+			let response = client.get(&url).send().unwrap();
+			match &response.status().is_success() {
+				true => {Ok(response.text().unwrap())},
+				false => {Err(response.text().unwrap())}
 			}
-
-			response.read_to_string(&mut body).unwrap();
-
-			Err(body)
 		}
 
 		/// Creates a new ShodanClient.
@@ -79,8 +54,8 @@ pub mod shodan {
 						ip_address,
 						self.api_key);
 
-			let response = self.request("GET", formatted_url);
-			self.form_response(response)
+			let response = self.get( formatted_url);
+			response
 		}
 
 		/// Method for `/shodan/host/search`, no facets.
@@ -90,8 +65,8 @@ pub mod shodan {
 						self.api_key,
 						query);
 
-			let response = self.request("GET", formatted_url);
-			self.form_response(response)
+			let response = self.get( formatted_url);
+			response
 		}
 
 		/// Method for `/shodan/host/search`, with facets.
@@ -102,8 +77,8 @@ pub mod shodan {
 						query,
 						facets);
 
-			let response = self.request("GET", formatted_url);
-			self.form_response(response)
+			let response = self.get( formatted_url);
+			response
 		}
 
 		/// Method for `/labs/honeyscore/{ip}`.
@@ -113,8 +88,76 @@ pub mod shodan {
 						ip_address,
 						self.api_key);
 
-			let response = self.request("GET", formatted_url);
-			self.form_response(response)
+			let response = self.get( formatted_url);
+			response
+		}
+		pub fn protocols(&self) -> Result<String, String> {
+			let formatted_url = format!("{}/shodan/protocols?key={}",
+						BASE_URL,
+						self.api_key);
+
+			let response = self.get( formatted_url);
+			response
+		}
+		pub fn scan(&self, ip_addresses: &str) -> Result<String, String> {
+			let formatted_url = format!("{}/shodan/scan?key={}",
+				BASE_URL,
+				self.api_key
+			 );
+			let params =vec![("ip".to_string(), ip_addresses.to_string())];
+			let response = self.post(formatted_url, params);
+			response
+		}
+		pub fn scan_status(&self, id: &str) -> Result<String, String>  {
+			let formatted_url = format!("{}/shodan/scan/{}?key={}",
+						BASE_URL,
+						id,
+						self.api_key);
+			let response = self.get(formatted_url);
+			response
+		}
+		pub fn query_for_scan(&self, id: &str) -> Result<String, String> {
+			let query=format!("scan:{}", id);
+			let response = self.search(&query);
+			response
+		}
+		//post
+		pub fn internet(&self, port: i32, protocol: &str) -> Result<String, String>  {
+			let formatted_url = format!("{}/shodan/scan/internet?key={}",
+				BASE_URL,
+				self.api_key
+			 );
+			let params =vec![("port".to_string(), port.to_string()), ("protocol".to_string(), protocol.to_string())];
+			let response = self.post(formatted_url, params);
+			response
+			
+		}
+		pub fn scan_dns(&self, domain: &str) -> Result<String, String> {
+			let formatted_url = format!("{}/dns/domain/{}?key={}",
+				BASE_URL,
+				domain,
+				self.api_key);
+			let response = self.get(formatted_url);
+			response
+		}
+		pub fn resolve_dns(&self, hostnames: &str) -> Result<String, String> {
+			let formatted_url = format!("{}/dns/resolve?hostnames={}&key={}",
+				BASE_URL,
+				hostnames,
+				self.api_key
+				);
+			let response = self.get(formatted_url);
+			response
+		}
+		pub fn reverse_dns(&self, ips: &str) -> Result<String, String> {
+			let formatted_url  = format!("{}/dns/reverse?ips={}&key={}", 
+				BASE_URL,
+				ips,
+				self.api_key
+				);
+			let response = self.get(formatted_url);
+			response
 		}
     }
 }
+

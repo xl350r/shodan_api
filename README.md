@@ -9,6 +9,7 @@ Changes:
  - removed form_response function get & post functions return now return body of response.
  - renamed and changed create_http_client to build_client
  - removed request function and added get post explicitly
+ 
 New Functions:
  - Scan
  - Scan_status

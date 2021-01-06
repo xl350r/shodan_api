@@ -6,9 +6,8 @@ shodan_api is modified heavily from: https://github.com/femiagbabiaka/shodan-rus
 
 Changes: 
  - Changed from Hyper to reqwest
- - removed form_response function get & post functions return now return body of response.
+ - removed form_response function with get & post functions which now return text from response.
  - renamed and changed create_http_client to build_client
- - removed request function and added get post explicitly
  
 New Functions:
  - Scan
